@@ -1,0 +1,50 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "pwnedpasswordsworker",
+  "main": "index.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-07-23",
+  "services": [{ "binding": "BLOB_FETCHER", "service": "pwnedpasswordsblobworker" }],
+  "cache": {
+    "enabled": true
+  },
+  "secrets": {
+    "required": ["HIBP_PURGE_CACHE_SECRET"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "env": {
+    "stage": {
+      "name": "pwnedpasswordsworkerstage",
+      "routes": ["stage-api.pwnedpasswords.com/*"],
+      "secrets": {
+        "required": ["HIBP_PURGE_CACHE_SECRET"]
+      },
+      "services": [{ "binding": "BLOB_FETCHER", "service": "pwnedpasswordsblobworkerstage" }]
+    },
+    "prod": {
+      "name": "pwnedpasswordsworkerprod",
+      "routes": ["prod-api.pwnedpasswords.com/*", "api.pwnedpasswords.com/range/*"],
+      "secrets": {
+        "required": ["HIBP_PURGE_CACHE_SECRET"]
+      },
+      "services": [{ "binding": "BLOB_FETCHER", "service": "pwnedpasswordsblobworker" }]
+    }
+  },
+  "placement": {
+    "mode": "smart"
+  }
+}
