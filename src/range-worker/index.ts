@@ -49,11 +49,6 @@ export async function processRequest(
   }
 
   const url = new URL(request.url);
-  /*
-  if (!url.protocol.startsWith("https") && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    return new Response("Requests must be made over HTTPS", { status: 400, statusText: "Bad Request", headers });
-  }
-  */
 
   if (!url.pathname.startsWith("/range/")) {
     return new Response("Invalid API query", { status: 400, statusText: "Bad Request", headers });
