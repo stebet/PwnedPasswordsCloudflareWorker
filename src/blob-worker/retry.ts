@@ -35,7 +35,7 @@ export async function fetchWithRetry(input: RequestInfo | URL, init?: RequestIni
     }
 
     const retryDelayMs = getRetryDelayMs(response.headers.get("Retry-After"), retry, previousDelayMs, random);
-    previousDelayMs = retryDelayMs;
+    previousDelayMs = Math.max(retryDelayMs, previousDelayMs);
     await response.body?.cancel();
     await sleep(retryDelayMs);
   }
