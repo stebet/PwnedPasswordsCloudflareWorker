@@ -26,16 +26,16 @@ export async function processRequest(
 ): Promise<Response> {
   const headers = createResponseHeaders();
   if (env && ctx) {
-    const purgeOutcome = await purgeCacheIfAuthorized(request, env.HIBP_PURGE_CACHE_SECRET, ctx);
+    const purgeOutcome = await purgeCachesIfAuthorized(request, blobFetcher, env.HIBP_PURGE_CACHE_SECRET, ctx);
     if (purgeOutcome === "unauthorized") {
       return new Response("Invalid cache purge secret", { status: 403, statusText: "Forbidden", headers });
     }
 
-    if (purgeOutcome === "failed") {
+    if (purgeOutcome === "range-purge-failed") {
       return new Response("Unable to purge cache", { status: 502, statusText: "Bad Gateway", headers });
     }
 
-    if (purgeOutcome === "purged" && !(await blobFetcher.purgeCache())) {
+    if (purgeOutcome === "blob-purge-failed") {
       return new Response("Unable to purge Blob cache", { status: 502, statusText: "Bad Gateway", headers });
     }
   }
@@ -98,6 +98,9 @@ export async function processRequest(
   if (blobResponse.status === 200 && addPaddingHeader && addPaddingHeader.toLowerCase() === "true") {
     const content = await blobResponse.text();
     if (!content) {
+      headers.delete("Content-MD5");
+      headers.delete("ETag");
+      headers.delete("Content-Length");
       return new Response("Upstream response body was empty", {
         status: 500,
         headers,
@@ -132,11 +135,12 @@ function setCacheControlForSuccessfulBlobResponse(headers: Headers, request: Req
   }
 }
 
-async function purgeCacheIfAuthorized(
+async function purgeCachesIfAuthorized(
   request: Request,
+  blobFetcher: BlobFetcher,
   expectedSecret: string,
   ctx: CachePurgeContext,
-): Promise<"unauthorized" | "purged" | "failed" | "not-requested"> {
+): Promise<"unauthorized" | "purged" | "blob-purge-failed" | "range-purge-failed" | "not-requested"> {
   const providedSecret = request.headers.get(cachePurgeHeader);
   if (providedSecret === null) {
     return "not-requested";
@@ -152,11 +156,15 @@ async function purgeCacheIfAuthorized(
 
   const cache = ctx.cache;
   if (!cache) {
-    return "failed";
+    return "range-purge-failed";
+  }
+
+  if (!(await blobFetcher.purgeCache())) {
+    return "blob-purge-failed";
   }
 
   const result = await cache.purge({ purgeEverything: true });
-  return result.success ? "purged" : "failed";
+  return result.success ? "purged" : "range-purge-failed";
 }
 
 function buildPaddingSuffix(isNtlm: boolean): string {

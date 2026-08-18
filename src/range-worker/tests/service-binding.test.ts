@@ -114,9 +114,21 @@ describe("Blob service binding", () => {
     expect(response.headers.get("Age")).toBeNull();
   });
 
-  it("purges the range Worker cache without forwarding the purge credential", async () => {
+  it("purges the Blob cache before the final range-cache invalidation", async () => {
+    const operations: string[] = [];
     const blobFetcher = createBlobFetcher(new Response("RANGE-DATA"));
-    const cacheContext = createCacheContext();
+    blobFetcher.purgeCache.mockImplementation(async () => {
+      operations.push("blob");
+      return true;
+    });
+    const cacheContext = {
+      cache: {
+        purge: vi.fn(async () => {
+          operations.push("range");
+          return { errors: [], success: true };
+        }),
+      },
+    };
     const response = await processRequest(
       new Request("https://example.com/range/ABCDE", {
         headers: { "hibp-purge-cache": "purge-secret" },
@@ -130,6 +142,7 @@ describe("Blob service binding", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(cacheContext.cache.purge).toHaveBeenCalledWith({ purgeEverything: true });
     expect(blobFetcher.purgeCache).toHaveBeenCalledOnce();
+    expect(operations).toEqual(["blob", "range"]);
     const [blobRequest] = blobFetcher.fetch.mock.calls[0];
     expect((blobRequest as Request).headers.get("hibp-purge-cache")).toBeNull();
   });
@@ -167,7 +180,7 @@ describe("Blob service binding", () => {
 
     expect(response.status).toBe(502);
     expect(await response.text()).toBe("Unable to purge Blob cache");
-    expect(cacheContext.cache.purge).toHaveBeenCalledWith({ purgeEverything: true });
+    expect(cacheContext.cache.purge).not.toHaveBeenCalled();
     expect(blobFetcher.purgeCache).toHaveBeenCalledOnce();
     expect(blobFetcher.fetch).not.toHaveBeenCalled();
   });
