@@ -70,16 +70,17 @@ all responses include `Vary: Add-Padding, HIBP-Purge-Cache`.
 Send `HIBP_PURGE_CACHE_SECRET` in the `hibp-purge-cache` request header to purge the
 range and Blob Workers' entire caches. Purge requests are not cached.
 
-Transient Blob failures (408, 429, and 5xx responses) and transport errors are retried
-up to five times. The Worker honors `Retry-After` when supplied; otherwise it waits one
-second initially, then doubles the previous delay with jitter.
+Transient Microsoft Entra token and Blob download failures (408, 429, and 5xx responses)
+and transport errors are retried up to five times. The Worker honors `Retry-After` when
+supplied; otherwise it waits one second initially, then doubles the previous delay with
+jitter.
 
 ## Deployment environments
 
 | Environment | Public API Worker | Private Blob Worker | Public route |
 | --- | --- | --- | --- |
 | `stage` | `pwnedpasswordsworkerstage` | `pwnedpasswordsblobworkerstage` | `stage-api.pwnedpasswords.com/*` |
-| `prod` | `pwnedpasswordsworker` | `pwnedpasswordsblobworker` | `api.pwnedpasswords.com/*` |
+| `prod` | `pwnedpasswordsworker` | `pwnedpasswordsblobworker` | `prod-api.pwnedpasswords.com/*`, `api.pwnedpasswords.com/range/*` |
 
 Pushing to `main` deploys the `stage` environment. The GitHub Actions **Deploy Worker**
 workflow can be manually dispatched to select either `stage` or `prod`. Configure the

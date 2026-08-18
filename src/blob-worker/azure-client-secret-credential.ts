@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "./retry";
+
 interface AccessToken {
   expiresOnTimestamp: number;
   token: string;
@@ -17,7 +19,7 @@ export class AzureClientSecretCredential {
       return this.accessToken;
     }
 
-    const tokenResponse = await fetch(`https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`, {
+    const tokenResponse = await fetchWithRetry(`https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`, {
       method: "POST",
       headers: {
         Accept: "application/json",
