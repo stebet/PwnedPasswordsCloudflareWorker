@@ -8,3 +8,7 @@ wasm-pack.log
 worker/
 node_modules/
 .cargo-ok
+.wrangler/
+coverage/
+.dev.vars*
+!.dev.vars.example
