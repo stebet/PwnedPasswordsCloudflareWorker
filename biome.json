@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
   "formatter": {
     "lineWidth": 140,
     "indentStyle": "space",
@@ -9,15 +9,16 @@
   "files": {
     "includes": [
       "src/range-worker/index.ts",
+      "src/range-worker/range-handler.ts",
+      "src/range-worker/purge-entrypoint.ts",
+      "src/range-worker/blob-entrypoint.ts",
+      "src/range-worker/azure-client-secret-credential.ts",
+      "src/range-worker/cache-tags.ts",
+      "src/range-worker/cache-purge.ts",
+      "src/range-worker/retry.ts",
       "src/range-worker/tests/**/*",
       "src/range-worker/tsconfig.json",
       "src/range-worker/wrangler.jsonc",
-      "src/blob-worker/index.ts",
-      "src/blob-worker/azure-client-secret-credential.ts",
-      "src/blob-worker/retry.ts",
-      "src/blob-worker/tests/**/*",
-      "src/blob-worker/tsconfig.json",
-      "src/blob-worker/wrangler.jsonc",
       ".vscode/**/*",
       "biome.json",
       "package.json",

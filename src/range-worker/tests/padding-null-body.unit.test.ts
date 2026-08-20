@@ -4,7 +4,7 @@ import { createBlobFetcher } from "./helpers/blob-fetcher";
 
 describe("Add-Padding when upstream has no body", () => {
   it("returns 500 when upstream body is empty", async () => {
-    const response = await worker.processRequest(
+    const response = await worker.processRangeRequest(
       new Request("https://example.com/range/ABCDE", {
         headers: {
           "Add-Padding": "true",
@@ -18,7 +18,7 @@ describe("Add-Padding when upstream has no body", () => {
   });
 
   it("preserves CORS headers without stale integrity validators on an empty Blob response", async () => {
-    const response = await worker.processRequest(
+    const response = await worker.processRangeRequest(
       new Request("https://example.com/range/ABCDE", {
         headers: {
           "Add-Padding": "true",

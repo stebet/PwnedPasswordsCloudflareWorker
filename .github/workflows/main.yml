@@ -67,7 +67,5 @@ jobs:
          name: coverage-report
          path: coverage/cobertura-coverage.xml
          if-no-files-found: error
-      - name: Deploy private Blob Worker
-        run: pnpm exec wrangler deploy --config src/blob-worker/wrangler.jsonc --env "$DEPLOY_ENVIRONMENT"
-      - name: Deploy public API Worker
+      - name: Deploy range Worker
         run: pnpm exec wrangler deploy --config src/range-worker/wrangler.jsonc --env "$DEPLOY_ENVIRONMENT"

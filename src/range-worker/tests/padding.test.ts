@@ -20,7 +20,7 @@ describe("Add-Padding suffix formatting", () => {
       return arr;
     }) as typeof crypto.getRandomValues);
 
-    const response = await worker.processRequest(
+    const response = await worker.processRangeRequest(
       new Request("https://example.com/range/ABCDE", {
         headers: {
           "Add-Padding": "true",
@@ -58,7 +58,7 @@ describe("Add-Padding suffix formatting", () => {
       return arr;
     }) as typeof crypto.getRandomValues);
 
-    const response = await worker.processRequest(
+    const response = await worker.processRangeRequest(
       new Request("https://example.com/range/ABCDE?mode=ntlm", {
         headers: {
           "Add-Padding": "true",
