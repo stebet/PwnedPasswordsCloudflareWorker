@@ -4,12 +4,8 @@
   "main": "index.ts",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2026-07-23",
-  "services": [{ "binding": "BLOB_FETCHER", "service": "pwnedpasswordsblobworker" }],
   "cache": {
     "enabled": true
-  },
-  "secrets": {
-    "required": ["HIBP_PURGE_CACHE_SECRET"]
   },
   "observability": {
     "enabled": true,
@@ -31,17 +27,41 @@
       "name": "pwnedpasswordsworkerstage",
       "routes": ["stage-api.pwnedpasswords.com/*"],
       "secrets": {
-        "required": ["HIBP_PURGE_CACHE_SECRET"]
+        "required": [
+          "AZURE_STORAGE_ACCOUNT",
+          "AZURE_CLIENT_ID",
+          "AZURE_TENANT_ID",
+          "SHA1_BLOB_CONTAINER",
+          "NTLM_BLOB_CONTAINER",
+          "AZURE_CLIENT_SECRET",
+          "HIBP_PURGE_CACHE_SECRET"
+        ]
       },
-      "services": [{ "binding": "BLOB_FETCHER", "service": "pwnedpasswordsblobworkerstage" }]
+      "services": [
+        { "binding": "BLOB_ENTRYPOINT", "service": "pwnedpasswordsworkerstage", "entrypoint": "BlobEntrypoint" },
+        { "binding": "PURGE_ENTRYPOINT", "service": "pwnedpasswordsworkerstage", "entrypoint": "PurgeEntrypoint" },
+        { "binding": "RANGE_ENTRYPOINT", "service": "pwnedpasswordsworkerstage" }
+      ]
     },
     "prod": {
       "name": "pwnedpasswordsworkerprod",
-      "routes": ["prod-api.pwnedpasswords.com/*", "api.pwnedpasswords.com/range/*"],
+      "routes": ["api.pwnedpasswords.com/range/*", "api.pwnedpasswords.com/purge*"],
       "secrets": {
-        "required": ["HIBP_PURGE_CACHE_SECRET"]
+        "required": [
+          "AZURE_STORAGE_ACCOUNT",
+          "AZURE_CLIENT_ID",
+          "AZURE_TENANT_ID",
+          "SHA1_BLOB_CONTAINER",
+          "NTLM_BLOB_CONTAINER",
+          "AZURE_CLIENT_SECRET",
+          "HIBP_PURGE_CACHE_SECRET"
+        ]
       },
-      "services": [{ "binding": "BLOB_FETCHER", "service": "pwnedpasswordsblobworker" }]
+      "services": [
+        { "binding": "BLOB_ENTRYPOINT", "service": "pwnedpasswordsworkerprod", "entrypoint": "BlobEntrypoint" },
+        { "binding": "PURGE_ENTRYPOINT", "service": "pwnedpasswordsworkerprod", "entrypoint": "PurgeEntrypoint" },
+        { "binding": "RANGE_ENTRYPOINT", "service": "pwnedpasswordsworkerprod" }
+      ]
     }
   },
   "placement": {

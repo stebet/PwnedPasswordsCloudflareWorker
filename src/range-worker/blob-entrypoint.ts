@@ -1,24 +1,30 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { AzureClientSecretCredential } from "./azure-client-secret-credential";
+import { purgeWorkerCache } from "./cache-purge";
+import { cacheTagForPrefix } from "./cache-tags";
 import { fetchWithRetry } from "./retry";
 
 const validHex = /^[0-9A-F]{5}$/;
 const blobCacheTtl = 31_536_000;
 const blobCacheControl = `public, max-age=${blobCacheTtl}`;
-const blobCacheTag = "pwnedpasswords";
 let credential: AzureClientSecretCredential | undefined;
 
-export default class BlobWorker extends WorkerEntrypoint<BlobEnv> {
+type AzureBlobEnv = Pick<
+  ApiEnv,
+  "AZURE_STORAGE_ACCOUNT" | "AZURE_CLIENT_ID" | "AZURE_TENANT_ID" | "SHA1_BLOB_CONTAINER" | "NTLM_BLOB_CONTAINER" | "AZURE_CLIENT_SECRET"
+>;
+
+export class BlobEntrypoint extends WorkerEntrypoint<ApiEnv> {
   public async fetch(request: Request): Promise<Response> {
-    return await processRequest(request, this.env);
+    return await processBlobRequest(request, this.env);
   }
 
-  public async purgeCache(): Promise<boolean> {
-    return await purgeWorkerCache(this.ctx);
+  public async purgeCache(tag?: string): Promise<boolean> {
+    return await purgeWorkerCache(tag);
   }
 }
 
-export async function processRequest(request: Request, env: BlobEnv): Promise<Response> {
+export async function processBlobRequest(request: Request, env: AzureBlobEnv): Promise<Response> {
   if (request.method !== "GET") {
     return new Response("Only GET requests can be used to query ranges", {
       status: 405,
@@ -37,11 +43,12 @@ export async function processRequest(request: Request, env: BlobEnv): Promise<Re
   }
 
   const container = url.searchParams.get("mode") === "ntlm" ? env.NTLM_BLOB_CONTAINER : env.SHA1_BLOB_CONTAINER;
-  const blobResponse = await downloadBlob(env, container, `${prefix}.txt`);
+  const cacheTag = cacheTagForPrefix(prefix);
+  const blobResponse = await downloadBlob(env, container, `${prefix}.txt`, cacheTag);
   const headers = new Headers(blobResponse.headers);
   headers.set("Cache-Control", blobResponse.ok ? blobCacheControl : "no-store");
   if (blobResponse.ok) {
-    headers.set("Cache-Tag", blobCacheTag);
+    headers.set("Cache-Tag", cacheTag);
   } else {
     headers.delete("Cache-Tag");
   }
@@ -53,7 +60,7 @@ export async function processRequest(request: Request, env: BlobEnv): Promise<Re
   });
 }
 
-async function downloadBlob(env: BlobEnv, container: string, blobName: string): Promise<Response> {
+async function downloadBlob(env: AzureBlobEnv, container: string, blobName: string, cacheTag: string): Promise<Response> {
   const accessToken = await getCredential(env).getToken("https://storage.azure.com/.default");
   const blobUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${container}/${blobName}`;
 
@@ -64,7 +71,7 @@ async function downloadBlob(env: BlobEnv, container: string, blobName: string): 
     },
     cf: {
       cacheEverything: true,
-      cacheTags: [blobCacheTag],
+      cacheTags: [cacheTag],
       cacheControl: blobCacheControl,
       cacheReserveEligible: true,
       cacheTtlByStatus: {
@@ -75,12 +82,7 @@ async function downloadBlob(env: BlobEnv, container: string, blobName: string): 
   });
 }
 
-export async function purgeWorkerCache(ctx: Pick<ExecutionContext, "cache">): Promise<boolean> {
-  const cache = ctx.cache;
-  return cache ? (await cache.purge({ purgeEverything: true })).success : false;
-}
-
-function getCredential(env: BlobEnv): AzureClientSecretCredential {
+function getCredential(env: AzureBlobEnv): AzureClientSecretCredential {
   if (!credential) {
     credential = new AzureClientSecretCredential(env.AZURE_TENANT_ID, env.AZURE_CLIENT_ID, env.AZURE_CLIENT_SECRET);
   }

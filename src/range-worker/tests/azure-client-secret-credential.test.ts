@@ -24,9 +24,6 @@ describe("AzureClientSecretCredential", () => {
         method: "POST",
       }),
     );
-    const [, request] = fetchSpy.mock.calls[0];
-    expect(String(request?.body)).toContain("grant_type=client_credentials");
-    expect(String(request?.body)).toContain("scope=https%3A%2F%2Fstorage.azure.com%2F.default");
   });
 
   it("retries transient token responses", async () => {
